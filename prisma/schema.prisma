@@ -1,3 +1,7 @@
+// ------------------------------------------------------
+// 1. 配置与数据源
+// ------------------------------------------------------
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,111 +11,262 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+// ------------------------------------------------------
+// 2. 门店管理 (连锁体系核心)
+// ------------------------------------------------------
 
-  Item Item[]
-
-  @@map("categories")
-}
-
-model Item {
+model Store {
   id          String    @id @default(uuid())
-  code        String    @unique
-  name        String
-  description String
-  price       Int
-  active      Boolean   @default(true)
-  categoryId  String    @map("category_id")
+  name        String    // 门店名称：如“解放路一店”
+  code        String    @unique // 门店编码：如“ST001”
+  address     String    // 门店详细地址
+  phone       String    // 联系电话
+  longitude   Float?    // 经度（用于配送距离计算）
+  latitude    Float?    // 纬度
+  isOpen      Boolean   @default(true) // 营业状态
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  category  Category    @relation(fields: [categoryId], references: [id])
-  OrderItem OrderItem[]
+  // 关联关系
+  categories  Category[]
+  items       Item[]
+  orders      Order[]
+  coupons     Coupon[]  // 门店专属优惠券
+
+  @@map("stores")
+}
+
+// ------------------------------------------------------
+// 3. 商品与类目 (支持固定份额与称重)
+// ------------------------------------------------------
+
+model Category {
+  id        String    @id @default(uuid())
+  storeId   String    @map("store_id")
+  name      String
+  sort      Int       @default(0) // 排序权重
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  store     Store     @relation(fields: [storeId], references: [id])
+  items     Item[]
+
+  @@map("categories")
+}
+
+enum PricingUnit {
+  PIECE  // 份/个 (固定份额)
+  WEIGHT // 斤/克 (称重预留)
+}
+
+model Item {
+  id          String      @id @default(uuid())
+  storeId     String      @map("store_id")
+  categoryId  String      @map("category_id")
+  code        String      @unique // 商品条码/简码
+  name        String
+  description String?
+  image       String?     // 商品图片 URL
+  price       Int         // 价格（分）
+  unit        PricingUnit @default(PIECE)
+  specification String?   // 规格说明：如“约500g/份”
+  stock       Float       @default(0) // 库存数量
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  store       Store       @relation(fields: [storeId], references: [id])
+  category    Category    @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
 
   @@map("items")
 }
 
-model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  document  String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
+// ------------------------------------------------------
+// 4. 客户管理
+// ------------------------------------------------------
 
-  Order Order[]
+model Customer {
+  id          String   @id @default(uuid())
+  openId      String?  @unique @map("open_id") // 微信小程序 OpenID
+  unionId     String?  @unique @map("union_id")
+  nickname    String?
+  avatarUrl   String?  @map("avatar_url")
+  phone       String?  @unique
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  orders      Order[]
+  userCoupons UserCoupon[]
 
   @@map("customers")
 }
 
+// ------------------------------------------------------
+// 5. 订单与支付 (支持自提/配送)
+// ------------------------------------------------------
+
 enum OrderStatus {
-  PAYMENT_PENDING
-  PAID
-  PREPARING
-  READY
-  COMPLETED
-  CANCELED
+  PENDING_PAYMENT // 待支付
+  PAID            // 已支付
+  PREPARING       // 商家出货中/制作中
+  AWAITING_RESULT // 待取货/待配送
+  DELIVERING      // 配送中
+  COMPLETED       // 已完成
+  CANCELED        // 已取消
+  REFUNDED        // 已退款
+}
+
+enum OrderType {
+  PICKUP   // 到店自提
+  DELIVERY // 外卖配送
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  customerId String?     @map("customer_id")
-  code       String      @unique
-  status     OrderStatus
-  total      Int
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+  id           String      @id @default(uuid())
+  storeId      String      @map("store_id")
+  customerId   String      @map("customer_id")
+  code         String      @unique // 展示给用户的短订单号：如 202310240001
+  status       OrderStatus @default(PENDING_PAYMENT)
+  orderType    OrderType   @default(PICKUP)
 
-  customer  Customer?   @relation(fields: [customerId], references: [id])
-  OrderItem OrderItem[]
-  Payment   Payment[]
+  // 金额明细（单位：分）
+  totalAmount  Int         // 商品总原价
+  couponAmount Int         @default(0) // 优惠券抵扣金额
+  deliveryFee  Int         @default(0) // 配送费
+  payAmount    Int         // 最终实付金额
+
+  remark       String?     // 客户备注
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  store        Store       @relation(fields: [storeId], references: [id])
+  customer     Customer    @relation(fields: [customerId], references: [id])
+  orderItems   OrderItem[]
+  payment      Payment?
+  delivery     Delivery?
+  userCoupon   UserCoupon?
 
   @@map("orders")
 }
 
-enum OrderItemStatus {
-  ACTIVE
-  CANCELED
+model OrderItem {
+  id        String @id @default(uuid())
+  orderId   String @map("order_id")
+  itemId    String @map("item_id")
+  name      String // 下单时商品名称快照
+  unitPrice Int    // 下单时单价快照
+  quantity  Float  // 数量（固定份额通常为1.0, 2.0）
+  subtotal  Int    // 小计
+
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item      Item   @relation(fields: [itemId], references: [id])
+
+  @@map("order_items")
 }
 
-model OrderItem {
-  orderId   String          @map("order_id")
-  itemId    String          @map("item_id")
-  name      String
-  unitPrice Int             @map("unit_price")
-  quantity  Int
-  status    OrderItemStatus @default(ACTIVE)
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  item  Item  @relation(fields: [itemId], references: [id])
-
-  @@id([orderId, itemId])
-  @@map("order_items")
+enum PaymentMethod {
+  WECHAT
+  ALIPAY
+  BALANCE
 }
 
 enum PaymentStatus {
   PENDING
-  APPROVED
+  SUCCESS
   FAILED
   REFUNDED
 }
 
 model Payment {
-  id         String        @id @default(uuid())
-  orderId    String        @map("order_id")
-  amount     Int
-  status     PaymentStatus
-  qrCode     String        @map("qr_code")
-  externalId String        @unique @map("external_id")
-  createdAt  DateTime      @default(now()) @map("created_at")
-  updatedAt  DateTime      @updatedAt @map("updated_at")
+  id              String        @id @default(uuid())
+  orderId         String        @unique @map("order_id")
+  method          PaymentMethod @default(WECHAT)
+  status          PaymentStatus @default(PENDING)
+  amount          Int
+  transactionId   String?       @unique @map("transaction_id") // 微信/支付宝流水号
+  prepayId        String?       @map("prepay_id") // 预支付 ID
+  payUrl          String?       @map("pay_url")   // 支付二维码/链接
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  order Order @relation(fields: [orderId], references: [id])
+  order           Order         @relation(fields: [orderId], references: [id])
 
   @@map("payments")
+}
+
+// ------------------------------------------------------
+// 6. 配送管理 (支持自送与第三方)
+// ------------------------------------------------------
+
+enum DeliveryProvider {
+  STORE_SELF    // 门店自送
+  DADA          // 达达配送
+  MEITUAN       // 美团跑腿
+  SF            // 顺丰同城
+}
+
+model Delivery {
+  id              String           @id @default(uuid())
+  orderId         String           @unique @map("order_id")
+  provider        DeliveryProvider @default(STORE_SELF)
+  remoteId        String?          @map("remote_id") // 第三方平台的运单 ID
+  receiverName    String           @map("receiver_name")
+  receiverPhone   String           @map("receiver_phone")
+  receiverAddress String           @map("receiver_address")
+  lng             Float?
+  lat             Float?
+  status          String?          // 第三方配送状态快照
+  fee             Int              @default(0) // 实际支付给平台的配送费
+  
+  order           Order            @relation(fields: [orderId], references: [id])
+
+  @@map("deliveries")
+}
+
+// ------------------------------------------------------
+// 7. 优惠券系统
+// ------------------------------------------------------
+
+enum CouponType {
+  CASH     // 满减券
+  DISCOUNT // 折扣券
+}
+
+model Coupon {
+  id           String     @id @default(uuid())
+  storeId      String?    @map("store_id") // 若为空则全连锁通用
+  title        String
+  type         CouponType
+  value        Int        // 满减金额或折扣比例(0-99)
+  minSpend     Int        @default(0) // 门槛金额
+  startTime    DateTime   @map("start_time")
+  endTime      DateTime   @map("end_time")
+  quota        Int        @default(-1) // 总发行量，-1 表示无限
+  usedCount    Int        @default(0)
+
+  userCoupons  UserCoupon[]
+  store        Store?     @relation(fields: [storeId], references: [id])
+
+  @@map("coupons")
+}
+
+model UserCoupon {
+  id        String    @id @default(uuid())
+  couponId  String    @map("coupon_id")
+  customerId  String    @map("customer_id")
+  orderId   String?   @unique @map("order_id") // 关联使用的订单
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  
+  coupon    Coupon    @relation(fields: [couponId], references: [id])
+  customer  Customer  @relation(fields: [customerId], references: [id])
+  order     Order?    @relation(fields: [orderId], references: [id])
+
+  @@map("user_coupons")
 }

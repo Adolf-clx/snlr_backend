@@ -41,21 +41,21 @@ describe('Fetch Items Use Case', () => {
   })
 
   it('should filter by status ACTIVE', async () => {
-    await itemRepository.save(makeItem({ active: true }))
-    await itemRepository.save(makeItem({ active: false }))
-    await itemRepository.save(makeItem({ active: true }))
+    await itemRepository.save(makeItem({ isActive: true }))
+    await itemRepository.save(makeItem({ isActive: false }))
+    await itemRepository.save(makeItem({ isActive: true }))
     const result = await sut.execute({ status: ItemStatus.ACTIVE })
     expect(result.data).toHaveLength(2)
-    expect(result.data.every(i => i.active)).toBe(true)
+    expect(result.data.every(i => i.isActive)).toBe(true)
   })
 
   it('should filter by status INACTIVE', async () => {
-    await itemRepository.save(makeItem({ active: false }))
-    await itemRepository.save(makeItem({ active: true }))
-    await itemRepository.save(makeItem({ active: false }))
+    await itemRepository.save(makeItem({ isActive: false }))
+    await itemRepository.save(makeItem({ isActive: true }))
+    await itemRepository.save(makeItem({ isActive: false }))
     const result = await sut.execute({ status: ItemStatus.INACTIVE })
     expect(result.data).toHaveLength(2)
-    expect(result.data.every(i => !i.active)).toBe(true)
+    expect(result.data.every(i => !i.isActive)).toBe(true)
   })
 
   it('should filter by status DELETED', async () => {

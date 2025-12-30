@@ -11,27 +11,17 @@ export class PrismaCustomerRepository implements CustomerRepository {
   constructor(private prisma: PrismaService) {}
 
   private buildSearchWhere(params: FetchCustomersSearchParams): Prisma.CustomerWhereInput {
-    const { name, document, email } = params
+    const { nickname, phone } = params
     const where: Prisma.CustomerWhereInput = {}
-    if (name) where.name = { contains: name, mode: 'insensitive' }
-    if (document) where.document = document
-    if (email) where.email = email
+    if (nickname) where.nickname = { contains: nickname, mode: 'insensitive' }
+    if (phone) where.phone = phone
     return where
   }
 
-  async existsByDocument(document: string): Promise<boolean> {
+  async existsByPhone(phone: string): Promise<boolean> {
     const customer = await this.prisma.customer.findUnique({
       where: {
-        document,
-      },
-    })
-    return !!customer
-  }
-
-  async existsByEmail(email: string): Promise<boolean> {
-    const customer = await this.prisma.customer.findUnique({
-      where: {
-        email,
+        phone,
       },
     })
     return !!customer
@@ -44,7 +34,7 @@ export class PrismaCustomerRepository implements CustomerRepository {
     const where = this.buildSearchWhere(params)
     const rawCustomers = await this.prisma.customer.findMany({
       where,
-      orderBy: { name: sortOrder },
+      orderBy: { createdAt: sortOrder },
       skip,
       take,
     })
@@ -59,9 +49,9 @@ export class PrismaCustomerRepository implements CustomerRepository {
     return PrismaCustomerMapper.toDomain(customer)
   }
 
-  async findByDocument(document: string): Promise<Customer | null> {
+  async findByPhone(phone: string): Promise<Customer | null> {
     const customer = await this.prisma.customer.findUnique({
-      where: { document },
+      where: { phone },
     })
     if (!customer) return null
     return PrismaCustomerMapper.toDomain(customer)

@@ -9,6 +9,7 @@ import { OrderStatus } from './value-objects/order-status/order-status'
 import { OrderStatusPaymentPending } from './value-objects/order-status/order-status-payment-pending'
 
 export interface OrderProps {
+  storeId: string
   customerId: UniqueEntityID | null
   code: OrderCode
   status: OrderStatus
@@ -19,6 +20,7 @@ export interface OrderProps {
 }
 
 export interface CreateOrderProps {
+  storeId: string
   customerId?: string
   code?: string
   status?: string
@@ -28,6 +30,7 @@ export interface CreateOrderProps {
 }
 
 interface RestoreOrderProps {
+  storeId: string
   customerId?: string
   code: string
   status: string
@@ -38,6 +41,10 @@ interface RestoreOrderProps {
 }
 
 export class Order extends AggregateRoot<OrderProps> {
+  get storeId(): string {
+    return this.props.storeId
+  }
+
   get customerId(): string | null {
     return this.props.customerId?.value ?? null
   }
@@ -80,6 +87,7 @@ export class Order extends AggregateRoot<OrderProps> {
     const status = props.status ? OrderStatusFactory.from(props.status) : new OrderStatusPaymentPending()
     const order = new Order(
       {
+        storeId: props.storeId,
         customerId: props.customerId ? UniqueEntityID.create(props.customerId) : null,
         code: OrderCode.create(props.code),
         status,
@@ -98,6 +106,7 @@ export class Order extends AggregateRoot<OrderProps> {
     const items = props.items.map(OrderItem.restore)
     return new Order(
       {
+        storeId: props.storeId,
         customerId: props.customerId ? UniqueEntityID.restore(props.customerId) : null,
         code: OrderCode.restore(props.code),
         status: OrderStatusFactory.from(props.status),

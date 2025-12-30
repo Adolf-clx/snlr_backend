@@ -27,6 +27,7 @@ async function bootstrap() {
     .addTag('Items', 'Manage product items and their details')
     .addTag('Orders', 'Create and manage orders')
     .addTag('Payments', 'Payment processing endpoints')
+    .addTag('Stores', 'Store management endpoints')
     .build()
   patchNestJsSwagger()
   const documentFactory = SwaggerModule.createDocument(app, config)
@@ -39,7 +40,7 @@ async function bootstrap() {
   )
 
   const configService = app.get(EnvService)
-  const port = configService.get('PORT')
-  await app.listen(port)
+  const port = configService.get('PORT') || 3333
+  await app.listen(port, '0.0.0.0')
 }
 bootstrap()

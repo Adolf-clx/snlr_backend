@@ -26,7 +26,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
 
   async findByExternalId(externalId: string): Promise<Payment | null> {
     const payment = await this.prisma.payment.findUnique({
-      where: { externalId },
+      where: { transactionId: externalId },
     })
     if (!payment) return null
     return PrismaPaymentMapper.toDomain(payment)

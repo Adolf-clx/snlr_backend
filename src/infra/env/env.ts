@@ -8,6 +8,11 @@ export const envSchema = z.object({
   TRACE_EXPORTER_URL: z.string().url(),
   MERCADO_PAGO_ACCESS_TOKEN: z.string(),
   MERCADO_PAGO_WEBHOOK_URL: z.string().url(),
+  WECHAT_APP_ID: z.string(),
+  WECHAT_MCH_ID: z.string(),
+  WECHAT_SERIAL_NO: z.string(),
+  WECHAT_PRIVATE_KEY: z.string(),
+  WECHAT_NOTIFY_URL: z.string().url(),
 })
 
 export type Env = z.infer<typeof envSchema>

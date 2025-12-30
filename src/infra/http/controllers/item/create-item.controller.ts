@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { ZodRequestValidationPipe } from '../../pipes/zod-request-validation-pipe'
 
 const createItemBodySchema = z.object({
+  storeId: z.string().uuid().default('00000000-0000-0000-0000-000000000000'),
   code: z.string().min(1),
   name: z.string().min(1),
   description: z.string().min(1),
@@ -25,7 +26,14 @@ export class CreateItemController {
   @UsePipes(new ZodRequestValidationPipe({ body: createItemBodySchema }))
   async handle(@Body() body: CreateItemBodySchema) {
     try {
-      await this.createItem.execute(body)
+      await this.createItem.execute({
+        storeId: body.storeId,
+        code: body.code,
+        name: body.name,
+        description: body.description,
+        price: body.price,
+        categoryId: body.categoryId,
+      })
     } catch (error) {
       throw new UnprocessableEntityException(error.message)
     }

@@ -17,11 +17,11 @@ export class PrismaItemRepository implements ItemRepository {
     if (name) where.name = { contains: name, mode: 'insensitive' }
     if (categoryId) where.categoryId = categoryId
     if (status === ItemStatus.ACTIVE) {
-      where.active = true
+      where.isActive = true
       where.deletedAt = null
     }
     if (status === ItemStatus.INACTIVE) {
-      where.active = false
+      where.isActive = false
       where.deletedAt = null
     }
     if (status === ItemStatus.DELETED) where.deletedAt = { not: null }

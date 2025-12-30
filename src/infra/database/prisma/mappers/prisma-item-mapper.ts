@@ -5,11 +5,12 @@ export class PrismaItemMapper {
   static toDomain(raw: PrismaItem): Item {
     return Item.restore(
       {
+        storeId: raw.storeId,
         code: raw.code,
         name: raw.name,
-        description: raw.description,
+        description: raw.description ?? '',
         price: raw.price,
-        active: raw.active,
+        isActive: raw.isActive,
         categoryId: raw.categoryId,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -22,11 +23,12 @@ export class PrismaItemMapper {
   static toPrisma(Item: Item): Prisma.ItemUncheckedCreateInput {
     return {
       id: Item.id,
+      storeId: Item.storeId,
       code: Item.code,
       name: Item.name,
       description: Item.description,
       price: Item.priceInCents,
-      active: Item.active,
+      isActive: Item.isActive,
       categoryId: Item.categoryId,
       createdAt: Item.createdAt,
       updatedAt: Item.updatedAt,

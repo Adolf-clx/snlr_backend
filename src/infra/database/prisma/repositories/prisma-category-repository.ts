@@ -10,10 +10,8 @@ export class PrismaCategoryRepository implements CategoryRepository {
   constructor(private prisma: PrismaService) {}
 
   async existsByName(name: string): Promise<boolean> {
-    const category = await this.prisma.category.findUnique({
-      where: {
-        name,
-      },
+    const category = await this.prisma.category.findFirst({
+      where: { name },
     })
     return !!category
   }

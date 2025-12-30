@@ -3,28 +3,50 @@ import {
   Prisma,
   Order as PrismaOrder,
   OrderItem as PrismaOrderItem,
-  OrderItemStatus as PrismaOrderItemStatus,
   OrderStatus as PrismaOrderStatus,
 } from '@prisma/client'
 
 type RawOrderWithItems = PrismaOrder & {
-  OrderItem: PrismaOrderItem[]
+  orderItems: PrismaOrderItem[]
 }
 
 export class PrismaOrderMapper {
+  private static prismaToDomainStatus(status: PrismaOrderStatus): string {
+    switch (status) {
+      case 'PENDING_PAYMENT':
+        return 'PAYMENT_PENDING'
+      case 'PAID':
+        return 'PAID'
+      case 'PREPARING':
+        return 'PREPARING'
+      case 'AWAITING_RESULT':
+        return 'READY'
+      case 'DELIVERING':
+        return 'READY'
+      case 'COMPLETED':
+        return 'COMPLETED'
+      case 'CANCELED':
+        return 'CANCELED'
+      case 'REFUNDED':
+        return 'CANCELED'
+      default:
+        return 'PAYMENT_PENDING'
+    }
+  }
   static toDomain(raw: RawOrderWithItems): Order {
     return Order.restore(
       {
+        storeId: raw.storeId,
         customerId: raw.customerId ?? undefined,
         code: raw.code,
-        status: raw.status,
-        total: raw.total,
-        items: raw.OrderItem.map(item => ({
+        status: PrismaOrderMapper.prismaToDomainStatus(raw.status),
+        total: raw.payAmount ?? raw.totalAmount, // fallback if domain expects a single total
+        items: raw.orderItems.map(item => ({
           itemId: item.itemId,
           name: item.name,
           unitPriceCents: item.unitPrice,
           quantity: item.quantity,
-          status: item.status,
+          status: 'ACTIVE',
         })),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -36,18 +58,21 @@ export class PrismaOrderMapper {
   static toPrismaWithItems(order: Order): Prisma.OrderUncheckedCreateInput {
     return {
       id: order.id,
-      customerId: order.customerId,
+      storeId: order.storeId,
+      customerId: order.customerId ?? '00000000-0000-0000-0000-000000000000',
       code: order.code,
       status: order.status as PrismaOrderStatus,
-      total: order.totalInCents,
+      totalAmount: order.totalInCents,
+      payAmount: order.totalInCents,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-      OrderItem: {
+      orderItems: {
         create: order.items.map(item => ({
           itemId: item.itemId,
           name: item.name,
           unitPrice: item.unitPriceInCents,
           quantity: item.quantity,
+           subtotal: item.unitPriceInCents * item.quantity,
         })),
       },
     }
@@ -55,10 +80,10 @@ export class PrismaOrderMapper {
 
   static toPrismaWithoutItems(order: Order): Prisma.OrderUncheckedUpdateInput {
     return {
-      customerId: order.customerId,
+      customerId: order.customerId ?? undefined,
       code: order.code,
       status: order.status as PrismaOrderStatus,
-      total: order.totalInCents,
+      totalAmount: order.totalInCents,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     }
@@ -71,7 +96,7 @@ export class PrismaOrderMapper {
       name: item.name,
       unitPrice: item.unitPriceInCents,
       quantity: item.quantity,
-      status: item.status as PrismaOrderItemStatus,
+      subtotal: item.unitPriceInCents * item.quantity,
     }))
   }
 }

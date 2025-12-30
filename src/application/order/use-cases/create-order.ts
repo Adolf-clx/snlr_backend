@@ -13,6 +13,7 @@ interface CreateOrderItemInput {
 }
 
 interface CreateOrderInput {
+  storeId: string
   customerId?: string | null
   items: CreateOrderItemInput[]
 }
@@ -40,7 +41,7 @@ export class CreateOrderUseCase {
       input.items.map(async item => {
         const existingItem = await this.itemRepository.findById(item.itemId)
         if (!existingItem) throw new Error(`Item '${item.itemId}' does not exist`)
-        if (!existingItem.active) throw new Error(`Item '${item.itemId}' is not available`)
+        if (!existingItem.isActive) throw new Error(`Item '${item.itemId}' is not available`)
         return {
           itemId: existingItem.id,
           name: existingItem.name,
@@ -50,6 +51,7 @@ export class CreateOrderUseCase {
       })
     )
     const order = Order.create({
+      storeId: input.storeId,
       customerId: input.customerId ?? undefined,
       items: enrichedItems,
     })

@@ -11,6 +11,7 @@ const createOrderItemSchema = z.object({
   quantity: z.number().int().positive(),
 })
 const createOrderBodySchema = z.object({
+  storeId: z.string().uuid().default('00000000-0000-0000-0000-000000000000'),
   customerId: z.string().uuid().nullable().optional(),
   items: z.array(createOrderItemSchema).min(1),
 })
@@ -32,7 +33,11 @@ export class CreateOrderController {
   @UsePipes(new ZodRequestValidationPipe({ body: createOrderBodySchema }))
   async handle(@Body() body: CreateOrderBodySchema) {
     try {
-      const { order } = await this.createOrder.execute(body)
+      const { order } = await this.createOrder.execute({
+        storeId: body.storeId,
+        customerId: body.customerId,
+        items: body.items,
+      })
       return OrderPresenter.toMinimalHTTP(order)
     } catch (error) {
       throw new UnprocessableEntityException(error.message)

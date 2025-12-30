@@ -3,11 +3,10 @@ import { Prisma, Customer as PrismaCustomer } from '@prisma/client'
 
 export class PrismaCustomerMapper {
   static toDomain(raw: PrismaCustomer): Customer {
-    return Customer.create(
+    return Customer.restore(
       {
-        name: raw.name,
-        document: raw.document,
-        email: raw.email,
+        nickname: raw.nickname ?? '',
+        phone: raw.phone ?? '',
         createdAt: raw.createdAt,
       },
       raw.id
@@ -17,10 +16,13 @@ export class PrismaCustomerMapper {
   static toPrisma(Customer: Customer): Prisma.CustomerUncheckedCreateInput {
     return {
       id: Customer.id,
-      name: Customer.name,
-      document: Customer.document,
-      email: Customer.email,
+      nickname: Customer.nickname,
+      phone: Customer.phone,
+      openId: undefined,
+      unionId: undefined,
+      avatarUrl: undefined,
       createdAt: Customer.createdAt,
+      updatedAt: new Date(),
     }
   }
 }

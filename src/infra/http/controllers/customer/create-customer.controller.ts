@@ -6,9 +6,8 @@ import { z } from 'zod'
 import { ZodRequestValidationPipe } from '../../pipes/zod-request-validation-pipe'
 
 const createCustomerBodySchema = z.object({
-  name: z.string().min(1),
-  document: z.string().min(11).max(14),
-  email: z.string().email(),
+  nickname: z.string().min(1),
+  phone: z.string().min(11).max(14),
 })
 type CreateCustomerBodySchema = z.infer<typeof createCustomerBodySchema>
 
@@ -27,7 +26,10 @@ export class CreateCustomerController {
   )
   async handle(@Body() body: CreateCustomerBodySchema) {
     try {
-      await this.createCustomer.execute(body)
+      await this.createCustomer.execute({
+        nickname: body.nickname,
+        phone: body.phone,
+      })
     } catch (error) {
       throw new UnprocessableEntityException(error.message)
     }

@@ -2,7 +2,7 @@ import { FetchOrdersSearchParams } from '@/application/order/@types/fetch-orders
 import { OrderRepository } from '@/application/order/repositories/order-repository'
 import { Order } from '@/domain/order/order'
 import { Injectable } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
+import { Prisma, OrderStatus as PrismaOrderStatus } from '@prisma/client'
 import { PrismaOrderMapper } from '../mappers/prisma-order-mapper'
 import { PrismaService } from '../prisma.service'
 
@@ -14,7 +14,17 @@ export class PrismaOrderRepository implements OrderRepository {
     const { code, status } = params
     const where: Prisma.OrderWhereInput = {}
     if (code) where.code = code
-    if (status) where.status = status
+    if (status) {
+      const map: Record<string, PrismaOrderStatus> = {
+        PAYMENT_PENDING: 'PENDING_PAYMENT',
+        PAID: 'PAID',
+        PREPARING: 'PREPARING',
+        READY: 'AWAITING_RESULT',
+        COMPLETED: 'COMPLETED',
+        CANCELED: 'CANCELED',
+      }
+      where.status = map[status] ?? 'PENDING_PAYMENT'
+    }
     return where
   }
 
@@ -22,7 +32,7 @@ export class PrismaOrderRepository implements OrderRepository {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
-        OrderItem: true,
+        orderItems: true,
       },
     })
     if (!order) return null
@@ -39,7 +49,7 @@ export class PrismaOrderRepository implements OrderRepository {
       orderBy: { createdAt: sortOrder },
       skip,
       take,
-      include: { OrderItem: true },
+      include: { orderItems: true },
     })
     return rawItems.map(PrismaOrderMapper.toDomain)
   }
@@ -69,23 +79,12 @@ export class PrismaOrderRepository implements OrderRepository {
         where: { id: order.id },
         data: orderData,
       })
-      for (const itemData of itemDataList) {
-        await tx.orderItem.upsert({
-          where: {
-            orderId_itemId: {
-              orderId: itemData.orderId,
-              itemId: itemData.itemId,
-            },
-          },
-          create: itemData,
-          update: {
-            name: itemData.name,
-            unitPrice: itemData.unitPrice,
-            quantity: itemData.quantity,
-            status: itemData.status,
-          },
-        })
-      }
+      await tx.orderItem.deleteMany({
+        where: { orderId: order.id },
+      })
+      await tx.orderItem.createMany({
+        data: itemDataList,
+      })
     })
   }
 

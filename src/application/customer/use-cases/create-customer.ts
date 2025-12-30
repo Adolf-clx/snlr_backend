@@ -4,9 +4,8 @@ import { Span } from 'nestjs-otel'
 import { CustomerRepository } from '../repositories/customer-repository'
 
 interface CreateCustomerInput {
-  name: string
-  document: string
-  email: string
+  nickname: string
+  phone: string
 }
 
 @Injectable()
@@ -15,10 +14,8 @@ export class CreateCustomerUseCase {
 
   @Span()
   async execute(input: CreateCustomerInput): Promise<void> {
-    const customerExistsByDocument = await this.customerRepository.existsByDocument(input.document)
-    const customerExistsByEmail = await this.customerRepository.existsByEmail(input.email)
-    if (customerExistsByDocument) throw new Error('Customer with this document already exists')
-    if (customerExistsByEmail) throw new Error('Customer with this email already exists')
+    const customerExistsByPhone = await this.customerRepository.existsByPhone(input.phone)
+    if (customerExistsByPhone) throw new Error('Customer with this phone already exists')
     const customer = Customer.create(input)
     await this.customerRepository.save(customer)
   }

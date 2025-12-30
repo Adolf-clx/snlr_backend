@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { ZodRequestValidationPipe } from '../../pipes/zod-request-validation-pipe'
 
 const createCategoryBodySchema = z.object({
+  storeId: z.string().uuid().default('00000000-0000-0000-0000-000000000000'),
   name: z.string().min(1),
 })
 type CreateCategoryBodySchema = z.infer<typeof createCategoryBodySchema>
@@ -21,7 +22,10 @@ export class CreateCategoryController {
   @UsePipes(new ZodRequestValidationPipe({ body: createCategoryBodySchema }))
   async handle(@Body() body: CreateCategoryBodySchema) {
     try {
-      await this.createCategory.execute({ name: body.name })
+      await this.createCategory.execute({
+        storeId: body.storeId,
+        name: body.name,
+      })
     } catch (error) {
       throw new UnprocessableEntityException(error.message)
     }

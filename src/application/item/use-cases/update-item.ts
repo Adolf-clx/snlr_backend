@@ -34,8 +34,8 @@ export class UpdateItemUseCase {
       price,
       categoryId,
     })
-    if (active === false && item.active) item.deactivate()
-    if (active === true && !item.active) item.reactivate()
+    if (active === false && item.isActive) item.deactivate()
+    if (active === true && !item.isActive) item.reactivate()
     await this.itemRepository.update(item)
   }
 }

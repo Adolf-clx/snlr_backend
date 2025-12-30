@@ -4,9 +4,8 @@ export class CustomerPresenter {
   static toHTTP(customer: Customer) {
     return {
       id: customer.id,
-      name: customer.name,
-      document: customer.document,
-      email: customer.email,
+      nickname: customer.nickname,
+      phone: customer.phone,
       createdAt: customer.createdAt,
     }
   }

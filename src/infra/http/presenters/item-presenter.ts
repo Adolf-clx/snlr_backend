@@ -9,7 +9,7 @@ export class ItemPresenter {
       description: item.description,
       price: item.price,
       categoryId: item.categoryId,
-      active: item.active,
+      isActive: item.isActive,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       deletedAt: item.deletedAt,

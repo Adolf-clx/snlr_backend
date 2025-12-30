@@ -1,4 +1,4 @@
-import { CreatePIXPaymentOutput, PaymentGateway } from '@/application/payment/gateways/payment-gateway'
+import { CreatePIXPaymentOutput, CreateWeChatJsapiPaymentOutput, PaymentGateway } from '@/application/payment/gateways/payment-gateway'
 import { PaymentStatus } from '@/domain/payment/value-objects/payment-status'
 import { EnvService } from '@/infra/env/env.service'
 import { Injectable } from '@nestjs/common'
@@ -46,6 +46,20 @@ export class MercadoPagoGateway implements PaymentGateway {
     const status = this.mapEventToStatus(response.status)
     if (!status) throw new Error(`Unhandled MercadoPago event: ${response.status}`)
     return status
+  }
+
+  async createWeChatJsapiPayment(orderId: string, amount: number, openId: string): Promise<CreateWeChatJsapiPaymentOutput> {
+    return {
+      externalId: `mp_${orderId}`,
+      status: 'pending',
+      params: {
+        timeStamp: String(Math.floor(Date.now() / 1000)),
+        nonceStr: 'nonce',
+        package: `prepay_id_${orderId}`,
+        signType: 'RSA',
+        paySign: 'sign',
+      },
+    }
   }
 
   private mapEventToStatus(event: string): PaymentStatus | null {

@@ -3,6 +3,7 @@ import { UniqueEntityID } from '@/shared/kernel/value-objects/unique-entity-id'
 import { CategoryName } from './value-objects/category-name'
 
 export interface CategoryProps {
+  storeId: string
   name: CategoryName
   createdAt: Date
   updatedAt: Date
@@ -10,6 +11,7 @@ export interface CategoryProps {
 }
 
 export interface CreateCategoryProps {
+  storeId: string
   name: string
   createdAt?: Date
   updatedAt?: Date
@@ -17,6 +19,7 @@ export interface CreateCategoryProps {
 }
 
 interface RestoreCategoryProps {
+  storeId: string
   name: string
   createdAt: Date
   updatedAt: Date
@@ -24,6 +27,10 @@ interface RestoreCategoryProps {
 }
 
 export class Category extends Entity<CategoryProps> {
+  get storeId(): string {
+    return this.props.storeId
+  }
+
   get name(): string {
     return this.props.name.value
   }
@@ -67,6 +74,7 @@ export class Category extends Entity<CategoryProps> {
   static create(props: CreateCategoryProps, id?: string): Category {
     return new Category(
       {
+        storeId: props.storeId,
         name: CategoryName.create(props.name),
         createdAt: props.createdAt ?? new Date(),
         updatedAt: props.updatedAt ?? new Date(),
@@ -79,6 +87,7 @@ export class Category extends Entity<CategoryProps> {
   static restore(props: RestoreCategoryProps, id: string): Category {
     return new Category(
       {
+        storeId: props.storeId,
         name: CategoryName.restore(props.name),
         createdAt: props.createdAt,
         updatedAt: props.updatedAt,

@@ -17,7 +17,7 @@ export class GetCustomerByDocumentUseCase {
 
   @Span()
   async execute({ document }: GetCustomerByDocumentInput): Promise<GetCustomerByDocumentOutput> {
-    const customer = await this.customerRepository.findByDocument(document)
+    const customer = await this.customerRepository.findByPhone(document)
     if (!customer) throw new Error('Customer not found')
     return {
       customer,

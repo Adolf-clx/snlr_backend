@@ -1,7 +1,6 @@
 export type FetchCustomersSearchParams = {
-  name?: string
-  document?: string
-  email?: string
+  nickname?: string
+  phone?: string
   page?: number
   perPage?: number
   sortOrder?: 'asc' | 'desc'

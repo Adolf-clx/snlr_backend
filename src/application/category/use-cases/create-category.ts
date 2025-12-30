@@ -4,6 +4,7 @@ import { Span } from 'nestjs-otel'
 import { CategoryRepository } from '../repositories/category-repository'
 
 interface CreateCategoryInput {
+  storeId: string
   name: string
 }
 

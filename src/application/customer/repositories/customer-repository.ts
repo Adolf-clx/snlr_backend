@@ -2,11 +2,10 @@ import { Customer } from '@/domain/customer/customer'
 import { FetchCustomersSearchParams } from '../@types/fetch-custormers-search-filters'
 
 export abstract class CustomerRepository {
-  abstract existsByDocument(document: string): Promise<boolean>
-  abstract existsByEmail(email: string): Promise<boolean>
+  abstract existsByPhone(phone: string): Promise<boolean>
   abstract findMany(params: FetchCustomersSearchParams): Promise<Customer[]>
   abstract findById(id: string): Promise<Customer | null>
-  abstract findByDocument(document: string): Promise<Customer | null>
+  abstract findByPhone(phone: string): Promise<Customer | null>
   abstract save(customer: Customer): Promise<void>
   abstract count(params: FetchCustomersSearchParams): Promise<number>
 }

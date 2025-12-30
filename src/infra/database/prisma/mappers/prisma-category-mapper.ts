@@ -3,8 +3,9 @@ import { Prisma, Category as PrismaCategory } from '@prisma/client'
 
 export class PrismaCategoryMapper {
   static toDomain(raw: PrismaCategory): Category {
-    return Category.create(
+    return Category.restore(
       {
+        storeId: raw.storeId,
         name: raw.name,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -17,6 +18,7 @@ export class PrismaCategoryMapper {
   static toPrisma(Category: Category): Prisma.CategoryUncheckedCreateInput {
     return {
       id: Category.id,
+      storeId: Category.storeId,
       name: Category.name,
       createdAt: Category.createdAt,
       updatedAt: Category.updatedAt,
